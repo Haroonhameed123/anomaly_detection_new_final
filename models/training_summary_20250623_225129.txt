@@ -1,0 +1,15 @@
+LSTM Training Results Summary
+==================================================
+Target to beat: 0.008327
+
+Baseline_Exact: 0.008250 (+0.9%)
+Model path: models/best_ConservativeOptimizedLSTMModel_20250623_224345.pth
+
+Slightly_Larger: 0.008192 (+1.6%)
+Model path: models/best_SlightlyImprovedLSTMModel_20250623_224633.pth
+
+Different_LR: 0.008376 (-0.6%)
+Model path: models/best_ConservativeOptimizedLSTMModel_DifferentLR_20250623_224947.pth
+
+Best model: Slightly_Larger
+Best model path: models/best_SlightlyImprovedLSTMModel_20250623_224633.pth

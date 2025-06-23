@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSTM Power Consumption Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #4facfe;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .sample-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-sample {
+            padding: 10px;
+            border: 2px solid #4facfe;
+            background: white;
+            color: #4facfe;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-sample:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .prediction-result {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .prediction-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+
+        .prediction-unit {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .model-info {
+            background: #e8f4f8;
+            border-left: 4px solid #4facfe;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .model-info h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .model-info p {
+            color: #7f8c8d;
+            margin: 5px 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .sample-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ LSTM Power Consumption Predictor</h1>
+            <p>Real-time electricity consumption forecasting using advanced neural networks</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">📊 Input Parameters</h2>
+                
+                <div class="sample-buttons">
+                    <button class="btn-sample" onclick="loadSample('low_consumption')">🟢 Low Usage</button>
+                    <button class="btn-sample" onclick="loadSample('medium_consumption')">🟡 Medium Usage</button>
+                    <button class="btn-sample" onclick="loadSample('high_consumption')">🔴 High Usage</button>
+                </div>
+
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label for="global_active_power">Global Active Power (kW)</label>
+                        <input type="number" id="global_active_power" step="0.001" min="0" max="20" value="1.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="global_reactive_power">Global Reactive Power (kW)</label>
+                        <input type="number" id="global_reactive_power" step="0.001" min="0" max="2" value="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voltage">Voltage (V)</label>
+                        <input type="number" id="voltage" step="0.1" min="220" max="260" value="240.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="global_intensity">Global Intensity (A)</label>
+                        <input type="number" id="global_intensity" step="0.1" min="0" max="50" value="4.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sub_metering_1">Kitchen Energy (Wh)</label>
+                        <input type="number" id="sub_metering_1" step="0.1" min="0" max="100" value="1.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sub_metering_2">Laundry Energy (Wh)</label>
+                        <input type="number" id="sub_metering_2" step="0.1" min="0" max="100" value="1.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sub_metering_3">Climate Energy (Wh)</label>
+                        <input type="number" id="sub_metering_3" step="0.1" min="0" max="50" value="6.0" required>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">🔮 Predict Power</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">🗑️ Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="results-section">
+                <h2 class="section-title">📈 Prediction Results</h2>
+                
+                <div id="loadingDiv" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Processing prediction...</p>
+                </div>
+
+                <div id="resultDiv" style="display: none;">
+                    <div class="prediction-result">
+                        <div>🔌 Predicted Global Active Power</div>
+                        <div class="prediction-value" id="predictionValue">--.----</div>
+                        <div class="prediction-unit">kilowatts (kW)</div>
+                    </div>
+                </div>
+
+                <div id="modelInfo" class="model-info">
+                    <h4>🤖 Model Information</h4>
+                    <p id="modelType">Loading model information...</p>
+                    <p id="modelStatus">Please wait...</p>
+                    <p id="modelPerformance"></p>
+                </div>
+
+                <div id="errorDiv" style="display: none;" class="error">
+                    <strong>❌ Error:</strong> <span id="errorMessage"></span>
+                </div>
+
+                <div id="inputSummary" style="display: none;" class="success">
+                    <h4>✅ Input Summary</h4>
+                    <div id="inputDetails"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load model information on page load
+        window.onload = function() {
+            loadModelInfo();
+        };
+
+        function loadModelInfo() {
+            fetch('/model_info')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('modelType').textContent = `Model: ${data.model_type || 'Unknown'}`;
+                    document.getElementById('modelStatus').textContent = `Status: ${data.status || 'Unknown'}`;
+                    
+                    if (data.validation_loss) {
+                        document.getElementById('modelPerformance').textContent = 
+                            `Validation Loss: ${data.validation_loss.toFixed(6)} | Epochs: ${data.epochs_trained}`;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('modelType').textContent = 'Error loading model info';
+                    console.error('Error:', error);
+                });
+        }
+
+        function loadSample(sampleType) {
+            fetch('/generate_sample')
+                .then(response => response.json())
+                .then(data => {
+                    const sample = data[sampleType];
+                    Object.keys(sample).forEach(key => {
+                        const input = document.getElementById(key);
+                        if (input) {
+                            input.value = sample[key];
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading sample:', error);
+                    showError('Failed to load sample data');
+                });
+        }
+
+        function clearForm() {
+            document.getElementById('predictionForm').reset();
+            hideResults();
+        }
+
+        function hideResults() {
+            document.getElementById('resultDiv').style.display = 'none';
+            document.getElementById('errorDiv').style.display = 'none';
+            document.getElementById('inputSummary').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorDiv').style.display = 'block';
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
+
+        function showResults(prediction, inputData) {
+            document.getElementById('predictionValue').textContent = prediction.toFixed(4);
+            document.getElementById('resultDiv').style.display = 'block';
+            
+            // Show input summary
+            const inputDetails = document.getElementById('inputDetails');
+            inputDetails.innerHTML = `
+                <p><strong>Active Power:</strong> ${inputData.global_active_power} kW</p>
+                <p><strong>Reactive Power:</strong> ${inputData.global_reactive_power} kW</p>
+                <p><strong>Voltage:</strong> ${inputData.voltage} V</p>
+                <p><strong>Intensity:</strong> ${inputData.global_intensity} A</p>
+                <p><strong>Kitchen:</strong> ${inputData.sub_metering_1} Wh</p>
+                <p><strong>Laundry:</strong> ${inputData.sub_metering_2} Wh</p>
+                <p><strong>Climate:</strong> ${inputData.sub_metering_3} Wh</p>
+            `;
+            document.getElementById('inputSummary').style.display = 'block';
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
+
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous results and show loading
+            hideResults();
+            document.getElementById('loadingDiv').style.display = 'block';
+            
+            // Collect form data
+            const formData = {
+                global_active_power: parseFloat(document.getElementById('global_active_power').value),
+                global_reactive_power: parseFloat(document.getElementById('global_reactive_power').value),
+                voltage: parseFloat(document.getElementById('voltage').value),
+                global_intensity: parseFloat(document.getElementById('global_intensity').value),
+                sub_metering_1: parseFloat(document.getElementById('sub_metering_1').value),
+                sub_metering_2: parseFloat(document.getElementById('sub_metering_2').value),
+                sub_metering_3: parseFloat(document.getElementById('sub_metering_3').value)
+            };
+            
+            // Send prediction request
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showResults(data.prediction, data.input_features);
+                } else {
+                    showError(data.error || 'Prediction failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Network error: Please check your connection');
+            });
+        });
+    </script>
+</body>
+</html>
